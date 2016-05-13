@@ -92,13 +92,19 @@ class SlackSocket(object):
         params:
         """
         done = False
+        do_close = False
         while not done:
             try:
                 e = self.get_event()
                 yield (e)
-            except (KeyboardInterrupt, SignalInterrupt):
+            except KeyboardInterrupt:
                 done = True
-        self.close()
+                do_close = True
+            except SignalInterrupt:
+                done = True
+                do_close = False
+        if do_close:
+            self.close()
 
     def send_msg(self, text, channel_name=None, channel_id=None, confirm=True):
         """
