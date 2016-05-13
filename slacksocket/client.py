@@ -2,6 +2,7 @@ import ssl
 import json
 import time
 import logging
+import signal
 import websocket
 import requests
 from threading import Thread, Lock
@@ -49,6 +50,10 @@ class SlackSocket(object):
         self.load_channel_lock = Lock()
         self._load_channels()
 
+        # used to exit get_event cleanly on SIGTERM
+        self._killed = False
+        signal.signal( signal.SIGTERM, self._on_kill )
+
         self._thread = Thread(target=self._open)
         self._thread.daemon = True
         self._thread.start()
@@ -75,6 +80,9 @@ class SlackSocket(object):
                 return e
             except IndexError:
                 time.sleep(.2)
+            # break if SIGTERM is recieved
+            if self._killed:
+                break
 
     def events(self):
         """
@@ -348,6 +356,10 @@ class SlackSocket(object):
         event.mentions = [self._lookup_user(u) for u in event.mentions]
 
         return event
+
+    def _on_kill( self, signum, frame ):
+        self._killed = True
+
 
     #######
     # Websocket Handlers
