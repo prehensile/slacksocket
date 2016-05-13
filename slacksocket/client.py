@@ -13,6 +13,8 @@ from .models import SlackEvent, SlackMsg
 
 log = logging.getLogger('slacksocket')
 
+class SignalInterrupt( Exception ):
+    pass
 
 class SlackSocket(object):
     """
@@ -82,7 +84,7 @@ class SlackSocket(object):
                 time.sleep(.2)
             # break if SIGTERM is recieved
             if self._killed:
-                break
+                raise SignalInterrupt( "SIGTERM recieved" )
 
     def events(self):
         """
@@ -94,7 +96,7 @@ class SlackSocket(object):
             try:
                 e = self.get_event()
                 yield (e)
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, SignalInterrupt):
                 done = True
         self.close()
 
